@@ -154,9 +154,21 @@ func APIMain(args *APIServerParams) error {
 	ctx := args.ctx
 	r := gin.Default()
 
-	tc, err := client.Dial(client.Options{
-		HostPort: args.TemporalHostPort,
-	})
+	var tc client.Client
+	var err error
+
+	for i := 0; i < 5; i++ {
+		tc, err = client.Dial(client.Options{
+			HostPort: args.TemporalHostPort,
+		})
+		if err == nil {
+			break
+		}
+
+		fmt.Printf("Unable to create Temporal client: %v. Retrying in 15 seconds...\n", err)
+		time.Sleep(15 * time.Second)
+	}
+
 	if err != nil {
 		return fmt.Errorf("unable to create Temporal client: %w", err)
 	}
