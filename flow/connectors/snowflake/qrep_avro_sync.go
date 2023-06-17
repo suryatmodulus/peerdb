@@ -311,6 +311,7 @@ func (s *SnowflakeAvroWriteHandler) HandleUpsertMode(allCols []string, upsertKey
 	`, s.dstTableName, tempTableName, upsertKeyClause,
 		updateSetClause, insertColumnsClause, insertValuesClause)
 	if _, err := s.db.Exec(mergeCmd); err != nil {
+		log.Errorf("failed to run MERGE command '%s':\n %v", mergeCmd, err)
 		return fmt.Errorf("failed to merge data into destination table: %w", err)
 	}
 	log.Infof("merged data from temp table %s into destination table %s",
