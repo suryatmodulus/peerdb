@@ -137,11 +137,17 @@ func (a *APIServer) StartQRepFlow(reqCtx context.Context, config *protos.QRepCon
 		if err != nil {
 			return "", fmt.Errorf("unable to fetch source peer config: %w", err)
 		}
+		if sourcePeer == nil {
+			return "", fmt.Errorf("source peer config not found")
+		}
 		config.SourcePeer = sourcePeer
 
 		destinationPeer, err := activities.FetchPeerConfig(reqCtx, a.pool, config.FlowJobName, "destination_peer")
 		if err != nil {
 			return "", fmt.Errorf("unable to fetch destination peer config: %w", err)
+		}
+		if destinationPeer == nil {
+			return "", fmt.Errorf("destination peer config not found")
 		}
 		config.DestinationPeer = destinationPeer
 
