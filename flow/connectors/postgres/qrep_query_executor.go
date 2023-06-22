@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	log "github.com/sirupsen/logrus"
 )
 
 type QRepQueryExecutor struct {
@@ -30,6 +31,8 @@ func NewQRepQueryExecutor(pool *pgxpool.Pool, ctx context.Context) *QRepQueryExe
 }
 
 func (qe *QRepQueryExecutor) ExecuteQuery(query string, args ...interface{}) (pgx.Rows, error) {
+	log.Infof("executing query: %s", query)
+	log.Infof("arguments: %v\n", args)
 	rows, err := qe.pool.Query(qe.ctx, query, args...)
 	if err != nil {
 		return nil, err
