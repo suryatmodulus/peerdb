@@ -87,10 +87,19 @@ impl Catalog {
     pub async fn new(catalog_config: &CatalogConfig) -> anyhow::Result<Self> {
         let connection_string = catalog_config.get_connection_string();
 
-        let (client, connection) =
-            tokio_postgres::connect(&connection_string, tokio_postgres::NoTls)
-                .await
-                .context("Failed to connect to catalog database")?;
+        let connection_result =
+            tokio_postgres::connect(&connection_string, tokio_postgres::NoTls).await;
+
+        let (client, connection) = match connection_result {
+            Ok((client, connection)) => (client, connection),
+            Err(e) => {
+                tracing::error!("Failed to connect to catalog database. Error: {}", e);
+                return Err(anyhow::anyhow!(
+                    "Failed to connect to catalog database. Error: {}",
+                    e
+                ));
+            }
+        };
 
         tokio::task::Builder::new()
             .name("Catalog connection")
