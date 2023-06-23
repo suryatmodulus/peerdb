@@ -5,13 +5,18 @@ use sqlparser::ast::{
     FunctionArg, FunctionArgExpr, Ident, JsonOperator, ObjectName, Query, Statement, TimezoneInfo,
 };
 
-#[derive(Default)]
-pub struct SnowflakeAst {}
+pub struct SnowflakeAst {
+    database: String,
+}
 
 impl SnowflakeAst {
+    pub fn new(database: String) -> Self {
+        Self { database }
+    }
+
     pub fn rewrite(&self, query: &mut Query) -> anyhow::Result<()> {
         visit_relations_mut(query, |table| {
-            table.0.remove(0);
+            table.0 = vec![Ident::new(&self.database)];
             ControlFlow::<()>::Continue(())
         });
 

@@ -200,7 +200,7 @@ impl SnowflakeQueryExecutor {
     pub async fn query(&self, query: &Box<Query>) -> PgWireResult<ResultSet> {
         let mut query = query.clone();
 
-        let ast = ast::SnowflakeAst::default();
+        let ast = ast::SnowflakeAst::new(self.config.database.clone());
         let _ = ast.rewrite(&mut query);
 
         let query_str: String = query.to_string();
@@ -302,7 +302,7 @@ impl QueryExecutor for SnowflakeQueryExecutor {
             Statement::Query(query) => {
                 let mut new_query = query.clone();
 
-                let snowflake_ast = ast::SnowflakeAst::default();
+                let snowflake_ast = ast::SnowflakeAst::new(self.config.database.clone());
                 snowflake_ast
                     .rewrite(&mut new_query)
                     .context("unable to rewrite query")
@@ -406,7 +406,7 @@ impl QueryExecutor for SnowflakeQueryExecutor {
         match stmt {
             Statement::Query(query) => {
                 let mut new_query = query.clone();
-                let sf_ast = ast::SnowflakeAst::default();
+                let sf_ast = ast::SnowflakeAst::new(self.config.database.clone());
                 sf_ast
                     .rewrite(&mut new_query)
                     .context("unable to rewrite query")
