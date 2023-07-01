@@ -282,7 +282,7 @@ func (c *SnowflakeConnector) dropStage(stagingPath string, job string) error {
 			return fmt.Errorf("failed to get AWS secrets: %w", err)
 		}
 
-		s3o, err := utils.NewS3BucketAndPrefix(stageName)
+		s3o, err := utils.NewS3BucketAndPrefix(stagingPath)
 		if err != nil {
 			log.Errorf("failed to create S3 bucket and prefix: %v", err)
 			return fmt.Errorf("failed to create S3 bucket and prefix: %w", err)
