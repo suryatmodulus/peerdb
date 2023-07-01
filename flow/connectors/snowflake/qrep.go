@@ -165,13 +165,21 @@ func (c *SnowflakeConnector) SetupQRepMetadataTables(config *protos.QRepConfig) 
 		credsStr := fmt.Sprintf("CREDENTIALS=(AWS_KEY_ID='%s' AWS_SECRET_KEY='%s')",
 			awsCreds.AccessKeyID, awsCreds.SecretAccessKey)
 
+		s3o, err := utils.NewS3BucketAndPrefix(config.StagingPath)
+		if err != nil {
+			log.Errorf("failed to create S3 bucket and prefix: %v", err)
+			return fmt.Errorf("failed to create S3 bucket and prefix: %w", err)
+		}
+
+		cleanURL := fmt.Sprintf("s3://%s/%s/%s", s3o.Bucket, s3o.Prefix, config.FlowJobName)
+
 		stageStatement := `
 			CREATE OR REPLACE STAGE %s
-			URL = '%s/%s'
+			URL = '%s'
 			%s
 			FILE_FORMAT = (TYPE = AVRO);
 			`
-		createStageStmt = fmt.Sprintf(stageStatement, stageName, config.StagingPath, config.FlowJobName, credsStr)
+		createStageStmt = fmt.Sprintf(stageStatement, stageName, cleanURL, credsStr)
 	} else {
 		stageStatement := `
 			CREATE OR REPLACE STAGE %s
@@ -214,7 +222,7 @@ func (c *SnowflakeConnector) ConsolidateQRepPartitions(config *protos.QRepConfig
 			return fmt.Errorf("failed to copy stage to destination: %w", err)
 		}
 
-		return c.dropStage(config.FlowJobName)
+		return c.dropStage(config.StagingPath, config.FlowJobName)
 	default:
 		return fmt.Errorf("unsupported sync mode: %s", syncMode)
 	}
@@ -257,7 +265,7 @@ func (c *SnowflakeConnector) getColsFromTable(tableName string) ([]string, error
 }
 
 // dropStage drops the stage for the given job.
-func (c *SnowflakeConnector) dropStage(job string) error {
+func (c *SnowflakeConnector) dropStage(stagingPath string, job string) error {
 	stageName := c.getStageNameForJob(job)
 	stmt := fmt.Sprintf("DROP STAGE IF EXISTS %s", stageName)
 
@@ -267,7 +275,7 @@ func (c *SnowflakeConnector) dropStage(job string) error {
 	}
 
 	// if s3 we need to delete the contents of the bucket
-	if strings.HasPrefix(stageName, "s3://") {
+	if strings.HasPrefix(stagingPath, "s3://") {
 		awsCreds, err := utils.GetAWSSecrets()
 		if err != nil {
 			log.Errorf("failed to get AWS secrets: %v", err)
