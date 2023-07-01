@@ -222,10 +222,16 @@ func (c *SnowflakeConnector) ConsolidateQRepPartitions(config *protos.QRepConfig
 			return fmt.Errorf("failed to copy stage to destination: %w", err)
 		}
 
-		return c.dropStage(config.StagingPath, config.FlowJobName)
+		return nil
 	default:
 		return fmt.Errorf("unsupported sync mode: %s", syncMode)
 	}
+}
+
+// CleanupQRepFlow function for postgres connector
+func (c *SnowflakeConnector) CleanupQRepFlow(config *protos.QRepConfig) error {
+	log.Infof("Cleaning up flow job %s", config.FlowJobName)
+	return c.dropStage(config.StagingPath, config.FlowJobName)
 }
 
 func (c *SnowflakeConnector) getColsFromTable(tableName string) ([]string, error) {

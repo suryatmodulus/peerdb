@@ -212,6 +212,12 @@ func (c *PostgresConnector) ConsolidateQRepPartitions(config *protos.QRepConfig)
 	return nil
 }
 
+// CleanupQRepFlow function for postgres connector
+func (c *PostgresConnector) CleanupQRepFlow(config *protos.QRepConfig) error {
+	// noop
+	return nil
+}
+
 // isPartitionSynced checks whether a specific partition is synced
 func (c *PostgresConnector) isPartitionSynced(partitionID string) (bool, error) {
 	// setup the query string
