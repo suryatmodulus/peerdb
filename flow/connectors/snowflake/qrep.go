@@ -9,6 +9,10 @@ import (
 	"github.com/PeerDB-io/peer-flow/connectors/utils"
 	"github.com/PeerDB-io/peer-flow/generated/protos"
 	"github.com/PeerDB-io/peer-flow/model"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -183,7 +187,7 @@ func (c *SnowflakeConnector) SetupQRepMetadataTables(config *protos.QRepConfig) 
 		return fmt.Errorf("failed to create stage %s: %w", stageName, err)
 	}
 
-	log.Infof("Created stage %s", stageName)
+	log.Infof("Created stage %s with command %s", stageName, createStageStmt)
 	return nil
 }
 
@@ -260,6 +264,45 @@ func (c *SnowflakeConnector) dropStage(job string) error {
 	_, err := c.database.Exec(stmt)
 	if err != nil {
 		return fmt.Errorf("failed to drop stage %s: %w", stageName, err)
+	}
+
+	// if s3 we need to delete the contents of the bucket
+	if strings.HasPrefix(stageName, "s3://") {
+		awsCreds, err := utils.GetAWSSecrets()
+		if err != nil {
+			log.Errorf("failed to get AWS secrets: %v", err)
+			return fmt.Errorf("failed to get AWS secrets: %w", err)
+		}
+
+		s3o, err := utils.NewS3BucketAndPrefix(stageName)
+		if err != nil {
+			log.Errorf("failed to create S3 bucket and prefix: %v", err)
+			return fmt.Errorf("failed to create S3 bucket and prefix: %w", err)
+		}
+
+		log.Infof("Deleting contents of bucket %s with prefix %s/%s", s3o.Bucket, s3o.Prefix, job)
+
+		// deleting the contents of the bucket with prefix
+		sess := session.Must(session.NewSession(&aws.Config{
+			Region: aws.String(awsCreds.Region),
+		}))
+
+		s3Svc := s3.New(sess)
+		s3Client := s3manager.NewBatchDelete(sess)
+
+		// Create a list of all objects with the defined prefix in the bucket
+		iter := s3manager.NewDeleteListIterator(s3Svc, &s3.ListObjectsInput{
+			Bucket: aws.String(s3o.Bucket),
+			Prefix: aws.String(fmt.Sprintf("%s/%s", s3o.Prefix, job)),
+		})
+
+		// Iterate through the objects in the bucket with the prefix and delete them
+		if err := s3Client.Delete(aws.BackgroundContext(), iter); err != nil {
+			log.Errorf("failed to delete objects from bucket: %v", err)
+			return fmt.Errorf("failed to delete objects from bucket: %w", err)
+		}
+
+		log.Infof("Deleted contents of bucket %s with prefix %s/%s", s3o.Bucket, s3o.Prefix, job)
 	}
 
 	log.Infof("Dropped stage %s", stageName)
