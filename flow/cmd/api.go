@@ -13,6 +13,7 @@ import (
 	peerflow "github.com/PeerDB-io/peer-flow/workflows"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/gin-gonic/gin"
@@ -229,6 +230,10 @@ func APIMain(args *APIServerParams) error {
 		return fmt.Errorf("unable to create Temporal client: %w", err)
 	}
 
+	grpcServer := grpc.NewServer()
+	flowHandler := NewFlowRequestHandler(tc)
+	protos.RegisterFlowServiceServer(grpcServer, flowHandler)
+
 	pool, err := pgxpool.New(ctx, args.CatalogJdbcURL)
 	if err != nil {
 		return fmt.Errorf("unable to create database pool: %w", err)
@@ -239,6 +244,10 @@ func APIMain(args *APIServerParams) error {
 		temporalClient: tc,
 		pool:           pool,
 	}
+
+	r.POST("/grpc", func(c *gin.Context) {
+		grpcServer.ServeHTTP(c.Writer, c.Request)
+	})
 
 	r.GET("/health", func(c *gin.Context) {
 		ctx := c.Request.Context()

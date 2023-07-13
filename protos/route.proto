@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "peers.proto";
+import "flow.proto";
+
+option go_package = "generated/protos";
+
+package peerdb.flow;
+
+message CreatePeerFlowRequest {
+  FlowConnectionConfigs connection_configs = 1;
+}
+
+message CreatePeerFlowResponse {
+  string worflow_id = 1;
+}
+
+message CreateQRepFlowRequest {
+  QRepConfig qrep_config = 1;
+}
+
+message CreateQRepFlowResponse {
+  string worflow_id = 1;
+}
+
+service FlowService {
+  rpc CreatePeerFlow(CreatePeerFlowRequest) returns (CreatePeerFlowResponse) {}
+  rpc CreateQRepFlow(CreateQRepFlowRequest) returns (CreateQRepFlowResponse) {}
+}
