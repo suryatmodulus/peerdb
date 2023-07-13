@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::Context;
 use flow_rs::{FlowJob, FlowJobTableMapping, QRepFlowJob};
-use pt::peers::{
+use pt::peerdb_peers::{
     peer::Config, BigqueryConfig, DbType, MongoConfig, Peer, PostgresConfig, SnowflakeConfig,
 };
 use qrep::process_options;
@@ -91,7 +91,7 @@ pub struct PeerDDLAnalyzer;
 #[derive(Debug, Clone)]
 pub enum PeerDDL {
     CreatePeer {
-        peer: Box<pt::peers::Peer>,
+        peer: Box<pt::peerdb_peers::Peer>,
         if_not_exists: bool,
     },
     CreateMirrorForCDC {

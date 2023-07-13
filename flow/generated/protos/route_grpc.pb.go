@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	FlowService_CreatePeerFlow_FullMethodName = "/peerdb.flow.FlowService/CreatePeerFlow"
-	FlowService_CreateQRepFlow_FullMethodName = "/peerdb.flow.FlowService/CreateQRepFlow"
+	FlowService_CreatePeerFlow_FullMethodName = "/peerdb_route.FlowService/CreatePeerFlow"
+	FlowService_CreateQRepFlow_FullMethodName = "/peerdb_route.FlowService/CreateQRepFlow"
 )
 
 // FlowServiceClient is the client API for FlowService service.
@@ -129,7 +129,7 @@ func _FlowService_CreateQRepFlow_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var FlowService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "peerdb.flow.FlowService",
+	ServiceName: "peerdb_route.FlowService",
 	HandlerType: (*FlowServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -31,7 +31,7 @@ use pgwire::{
     error::{ErrorInfo, PgWireError, PgWireResult},
     tokio::process_socket,
 };
-use pt::peers::{peer::Config, Peer};
+use pt::peerdb_peers::{peer::Config, Peer};
 use rand::Rng;
 use tokio::sync::Mutex;
 use tokio::{io::AsyncWriteExt, net::TcpListener};

@@ -5,7 +5,10 @@ use flow_rs::{FlowJob, QRepFlowJob};
 use peer_cursor::QueryExecutor;
 use peer_postgres::PostgresQueryExecutor;
 use prost::Message;
-use pt::peers::{peer::Config, DbType, Peer};
+use pt::{
+    peerdb_peers::PostgresConfig,
+    peerdb_peers::{peer::Config, DbType, Peer},
+};
 use tokio_postgres::{types, Client};
 
 mod embedded {
@@ -54,8 +57,8 @@ impl CatalogConfig {
     }
 
     // convert catalog config to PostgresConfig
-    pub fn to_postgres_config(&self) -> pt::peers::PostgresConfig {
-        pt::peers::PostgresConfig {
+    pub fn to_postgres_config(&self) -> pt::peerdb_peers::PostgresConfig {
+        PostgresConfig {
             host: self.host.clone(),
             port: self.port as u32,
             user: self.user.clone(),
@@ -223,31 +226,35 @@ impl Catalog {
                 Some(DbType::Snowflake) => {
                     let err = format!("unable to decode {} options for peer {}", "snowflake", name);
                     let snowflake_config =
-                        pt::peers::SnowflakeConfig::decode(options.as_slice()).context(err)?;
+                        pt::peerdb_peers::SnowflakeConfig::decode(options.as_slice())
+                            .context(err)?;
                     Some(Config::SnowflakeConfig(snowflake_config))
                 }
                 Some(DbType::Bigquery) => {
                     let err = format!("unable to decode {} options for peer {}", "bigquery", name);
                     let bigquery_config =
-                        pt::peers::BigqueryConfig::decode(options.as_slice()).context(err)?;
+                        pt::peerdb_peers::BigqueryConfig::decode(options.as_slice())
+                            .context(err)?;
                     Some(Config::BigqueryConfig(bigquery_config))
                 }
                 Some(DbType::Mongo) => {
                     let err = format!("unable to decode {} options for peer {}", "mongo", name);
                     let mongo_config =
-                        pt::peers::MongoConfig::decode(options.as_slice()).context(err)?;
+                        pt::peerdb_peers::MongoConfig::decode(options.as_slice()).context(err)?;
                     Some(Config::MongoConfig(mongo_config))
                 }
                 Some(DbType::Eventhub) => {
                     let err = format!("unable to decode {} options for peer {}", "eventhub", name);
                     let eventhub_config =
-                        pt::peers::EventHubConfig::decode(options.as_slice()).context(err)?;
+                        pt::peerdb_peers::EventHubConfig::decode(options.as_slice())
+                            .context(err)?;
                     Some(Config::EventhubConfig(eventhub_config))
                 }
                 Some(DbType::Postgres) => {
                     let err = format!("unable to decode {} options for peer {}", "postgres", name);
                     let postgres_config =
-                        pt::peers::PostgresConfig::decode(options.as_slice()).context(err)?;
+                        pt::peerdb_peers::PostgresConfig::decode(options.as_slice())
+                            .context(err)?;
                     Some(Config::PostgresConfig(postgres_config))
                 }
                 None => None,

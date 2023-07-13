@@ -6,10 +6,10 @@ import "flow.proto";
 
 option go_package = "generated/protos";
 
-package peerdb.flow;
+package peerdb_route;
 
 message CreatePeerFlowRequest {
-  FlowConnectionConfigs connection_configs = 1;
+  peerdb_flow.FlowConnectionConfigs connection_configs = 1;
 }
 
 message CreatePeerFlowResponse {
@@ -17,7 +17,7 @@ message CreatePeerFlowResponse {
 }
 
 message CreateQRepFlowRequest {
-  QRepConfig qrep_config = 1;
+  peerdb_flow.QRepConfig qrep_config = 1;
 }
 
 message CreateQRepFlowResponse {
