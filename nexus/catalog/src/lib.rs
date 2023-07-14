@@ -45,6 +45,13 @@ pub struct CatalogConfig {
     pub database: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct WorkflowDetails {
+    pub workflow_id: String,
+    pub source_peer: pt::peerdb_peers::Peer,
+    pub destination_peer: pt::peerdb_peers::Peer,
+}
+
 impl CatalogConfig {
     pub fn new(host: String, port: u16, user: String, password: String, database: String) -> Self {
         Self {
@@ -432,25 +439,44 @@ impl Catalog {
         Ok(())
     }
 
-    pub async fn get_workflow_id_for_flow_job(
+    pub async fn get_workflow_details_for_flow_job(
         &self,
         flow_job_name: &str,
-    ) -> anyhow::Result<Option<String>> {
+    ) -> anyhow::Result<Option<WorkflowDetails>> {
         let rows = self
             .pg
             .query(
-                "SELECT WORKFLOW_ID FROM FLOWS WHERE NAME = $1",
+                "SELECT workflow_id, source_peer, destination_peer FROM flows WHERE NAME = $1",
                 &[&flow_job_name],
             )
             .await?;
+
         // currently multiple rows for a flow job exist in catalog, but all mapped to same workflow id
         // CHANGE LOGIC IF THIS ASSUMPTION CHANGES
         if rows.is_empty() {
             tracing::info!("no workflow id found for flow job {}", flow_job_name);
             return Ok(None);
         }
+
         let first_row = rows.get(0).unwrap();
-        Ok(Some(first_row.get(0)))
+        let workflow_id: String = first_row.get(0);
+        let source_peer_id: i32 = first_row.get(1);
+        let destination_peer_id: i32 = first_row.get(2);
+
+        let source_peer = self
+            .get_peer(&source_peer_id.to_string())
+            .await
+            .context("unable to get source peer")?;
+        let destination_peer = self
+            .get_peer(&destination_peer_id.to_string())
+            .await
+            .context("unable to get destination peer")?;
+
+        Ok(Some(WorkflowDetails {
+            workflow_id,
+            source_peer,
+            destination_peer,
+        }))
     }
 
     pub async fn delete_flow_job_entry(&self, flow_job_name: &str) -> anyhow::Result<()> {

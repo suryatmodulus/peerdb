@@ -94,6 +94,53 @@ func (h *FlowRequestHandler) CreateQRepFlow(
 	}, nil
 }
 
-// TODO implement these
-// HealthCheck(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
-// 	ShutdownFlow(context.Context, *ShutdownRequest) (*ShutdownResponse, error)
+func (h *FlowRequestHandler) HealthCheck(
+	ctx context.Context, req *protos.HealthCheckRequest) (*protos.HealthCheckResponse, error) {
+	_, err := h.temporalClient.CheckHealth(ctx, nil)
+	if err != nil {
+		return &protos.HealthCheckResponse{
+			Ok: false,
+		}, fmt.Errorf("temporal health check failed: %w", err)
+	}
+
+	return &protos.HealthCheckResponse{
+		Ok: true,
+	}, nil
+}
+
+func (h *FlowRequestHandler) ShutdownFlow(
+	ctx context.Context, req *protos.ShutdownRequest) (*protos.ShutdownResponse, error) {
+	err := h.temporalClient.SignalWorkflow(
+		ctx,
+		req.WorkflowId,
+		"",
+		shared.PeerFlowSignalName,
+		shared.ShutdownSignal,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to signal PeerFlow workflow: %w", err)
+	}
+
+	workflowID := fmt.Sprintf("%s-dropflow-%s", req.FlowJobName, uuid.New())
+	workflowOptions := client.StartWorkflowOptions{
+		ID:        workflowID,
+		TaskQueue: shared.PeerFlowTaskQueue,
+	}
+	dropFlowHandle, err := h.temporalClient.ExecuteWorkflow(
+		ctx,                       // context
+		workflowOptions,           // workflow start options
+		peerflow.DropFlowWorkflow, // workflow function
+		req,                       // workflow input
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to start DropFlow workflow: %w", err)
+	}
+
+	if err = dropFlowHandle.Get(ctx, nil); err != nil {
+		return nil, fmt.Errorf("DropFlow workflow did not execute successfully: %w", err)
+	}
+
+	return &protos.ShutdownResponse{
+		Ok: true,
+	}, nil
+}

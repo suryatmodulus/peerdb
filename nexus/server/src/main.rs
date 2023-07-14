@@ -314,8 +314,8 @@ impl NexusBackend {
 
                     let catalog = self.catalog.lock().await;
                     tracing::info!("mirror_name: {}, if_exists: {}", flow_job_name, if_exists);
-                    let workflow_id = catalog
-                        .get_workflow_id_for_flow_job(&flow_job_name)
+                    let workflow_details = catalog
+                        .get_workflow_details_for_flow_job(&flow_job_name)
                         .await
                         .map_err(|err| {
                             PgWireError::ApiError(Box::new(PgError::Internal {
@@ -325,11 +325,15 @@ impl NexusBackend {
                                 ),
                             }))
                         })?;
-                    tracing::info!("got workflow id: {:?}", workflow_id);
-                    if workflow_id.is_some() {
+                    tracing::info!(
+                        "got workflow id: {:?}",
+                        workflow_details.as_ref().map(|w| &w.workflow_id)
+                    );
+                    if workflow_details.is_some() {
+                        let workflow_details = workflow_details.unwrap();
                         let mut flow_handler = self.flow_handler.as_ref().unwrap().lock().await;
                         flow_handler
-                            .shutdown_flow_job(&flow_job_name, &workflow_id.unwrap())
+                            .shutdown_flow_job(&flow_job_name, workflow_details)
                             .await
                             .map_err(|err| {
                                 PgWireError::ApiError(Box::new(PgError::Internal {

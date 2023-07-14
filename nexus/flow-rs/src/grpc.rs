@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Context;
+use catalog::WorkflowDetails;
 use pt::{
     flow_model::{FlowJob, QRepFlowJob},
     peerdb_flow::{QRepWriteMode, QRepWriteType},
@@ -61,11 +62,13 @@ impl FlowGrpcClient {
     pub async fn shutdown_flow_job(
         &mut self,
         flow_job_name: &str,
-        workflow_id: &str,
+        workflow_details: WorkflowDetails,
     ) -> anyhow::Result<()> {
         let shutdown_flow_req = pt::peerdb_route::ShutdownRequest {
             flow_job_name: flow_job_name.to_string(),
-            workflow_id: workflow_id.to_string(),
+            workflow_id: workflow_details.workflow_id,
+            source_peer: Some(workflow_details.source_peer),
+            destination_peer: Some(workflow_details.destination_peer),
         };
         let response = self.client.shutdown_flow(shutdown_flow_req).await?;
         let shutdown_response = response.into_inner();

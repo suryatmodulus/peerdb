@@ -43,6 +43,10 @@ pub struct ShutdownRequest {
     pub workflow_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub flow_job_name: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub source_peer: ::core::option::Option<super::peerdb_peers::Peer>,
+    #[prost(message, optional, tag = "4")]
+    pub destination_peer: ::core::option::Option<super::peerdb_peers::Peer>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

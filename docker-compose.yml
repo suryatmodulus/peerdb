@@ -87,11 +87,6 @@ services:
         condition: service_healthy
       temporal-admin-tools:
         condition: service_healthy
-    healthcheck:
-      test: "curl --fail http://flow_api:8112/health || exit 1"
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   flow_worker:
     container_name: flow_worker
@@ -132,8 +127,7 @@ services:
     depends_on:
       catalog:
         condition: service_healthy
-      flow_api:
-        condition: service_healthy
+
 
 volumes:
   pgdata:

@@ -35,6 +35,8 @@ message HealthCheckResponse {
 message ShutdownRequest {
   string workflow_id = 1;
   string flow_job_name = 2;
+  peerdb_peers.Peer source_peer = 3;
+  peerdb_peers.Peer destination_peer = 4;
 }
 
 message ShutdownResponse {
