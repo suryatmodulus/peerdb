@@ -191,6 +191,9 @@ func (c *EventHubConnector) sendEventBatch(events map[string][]*eventhub.Event) 
 			return err
 		}
 
+		// log the number of events sent to topic
+		log.Infof("successfully sent %d events to topic: %s", len(eventBatch), tblName)
+
 		numEventsPushed += len(eventBatch)
 	}
 

@@ -7,9 +7,11 @@ use std::{
 };
 
 use anyhow::Context;
-use flow_rs::{FlowJob, FlowJobTableMapping, QRepFlowJob};
-use pt::peerdb_peers::{
-    peer::Config, BigqueryConfig, DbType, MongoConfig, Peer, PostgresConfig, SnowflakeConfig,
+use pt::{
+    flow_model::{FlowJob, FlowJobTableMapping, QRepFlowJob},
+    peerdb_peers::{
+        peer::Config, BigqueryConfig, DbType, MongoConfig, Peer, PostgresConfig, SnowflakeConfig,
+    },
 };
 use qrep::process_options;
 use sqlparser::ast::CreateMirror::{Select, CDC};

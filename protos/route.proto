@@ -24,7 +24,27 @@ message CreateQRepFlowResponse {
   string worflow_id = 1;
 }
 
+message HealthCheckRequest {
+  string message = 1;
+}
+
+message HealthCheckResponse {
+  bool ok = 1;
+}
+
+message ShutdownRequest {
+  string workflow_id = 1;
+  string flow_job_name = 2;
+}
+
+message ShutdownResponse {
+  bool ok = 1;
+  string error_message = 2;
+}
+
 service FlowService {
   rpc CreatePeerFlow(CreatePeerFlowRequest) returns (CreatePeerFlowResponse) {}
   rpc CreateQRepFlow(CreateQRepFlowRequest) returns (CreateQRepFlowResponse) {}
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
+  rpc ShutdownFlow(ShutdownRequest) returns (ShutdownResponse) {}
 }

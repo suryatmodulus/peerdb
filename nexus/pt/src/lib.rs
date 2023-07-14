@@ -1,6 +1,7 @@
 use peerdb_peers::DbType;
 use sqlparser::ast::PeerType;
 
+pub mod flow_model;
 pub mod peerdb_flow;
 pub mod peerdb_peers;
 pub mod peerdb_route;

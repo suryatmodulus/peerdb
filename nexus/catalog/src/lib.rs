@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{anyhow, Context};
-use flow_rs::{FlowJob, QRepFlowJob};
 use peer_cursor::QueryExecutor;
 use peer_postgres::PostgresQueryExecutor;
 use prost::Message;
 use pt::{
+    flow_model::{FlowJob, QRepFlowJob},
     peerdb_peers::PostgresConfig,
     peerdb_peers::{peer::Config, DbType, Peer},
 };
@@ -221,44 +221,36 @@ impl Catalog {
             let peer_type: i32 = row.get(2);
             let options: Vec<u8> = row.get(3);
             let db_type = DbType::from_i32(peer_type);
+            let config = self.get_config(db_type, &name, options).await?;
 
-            let config = match db_type {
-                Some(DbType::Snowflake) => {
-                    let err = format!("unable to decode {} options for peer {}", "snowflake", name);
-                    let snowflake_config =
-                        pt::peerdb_peers::SnowflakeConfig::decode(options.as_slice())
-                            .context(err)?;
-                    Some(Config::SnowflakeConfig(snowflake_config))
-                }
-                Some(DbType::Bigquery) => {
-                    let err = format!("unable to decode {} options for peer {}", "bigquery", name);
-                    let bigquery_config =
-                        pt::peerdb_peers::BigqueryConfig::decode(options.as_slice())
-                            .context(err)?;
-                    Some(Config::BigqueryConfig(bigquery_config))
-                }
-                Some(DbType::Mongo) => {
-                    let err = format!("unable to decode {} options for peer {}", "mongo", name);
-                    let mongo_config =
-                        pt::peerdb_peers::MongoConfig::decode(options.as_slice()).context(err)?;
-                    Some(Config::MongoConfig(mongo_config))
-                }
-                Some(DbType::Eventhub) => {
-                    let err = format!("unable to decode {} options for peer {}", "eventhub", name);
-                    let eventhub_config =
-                        pt::peerdb_peers::EventHubConfig::decode(options.as_slice())
-                            .context(err)?;
-                    Some(Config::EventhubConfig(eventhub_config))
-                }
-                Some(DbType::Postgres) => {
-                    let err = format!("unable to decode {} options for peer {}", "postgres", name);
-                    let postgres_config =
-                        pt::peerdb_peers::PostgresConfig::decode(options.as_slice())
-                            .context(err)?;
-                    Some(Config::PostgresConfig(postgres_config))
-                }
-                None => None,
+            let peer = Peer {
+                name: name.clone().to_lowercase(),
+                r#type: peer_type,
+                config,
             };
+            peers.insert(name, peer);
+        }
+
+        Ok(peers)
+    }
+
+    pub async fn get_peer(&self, peer_name: &str) -> anyhow::Result<Peer> {
+        let stmt = self
+            .pg
+            .prepare_typed(
+                "SELECT id, name, type, options FROM peers WHERE name = $1",
+                &[],
+            )
+            .await?;
+
+        let rows = self.pg.query(&stmt, &[&peer_name]).await?;
+
+        if let Some(row) = rows.first() {
+            let name: String = row.get(1);
+            let peer_type: i32 = row.get(2);
+            let options: Vec<u8> = row.get(3);
+            let db_type = DbType::from_i32(peer_type);
+            let config = self.get_config(db_type, &name, options).await?;
 
             let peer = Peer {
                 name: name.clone().to_lowercase(),
@@ -266,10 +258,51 @@ impl Catalog {
                 config,
             };
 
-            peers.insert(name, peer);
+            Ok(peer)
+        } else {
+            Err(anyhow::anyhow!("No peer with name {} found", peer_name))
         }
+    }
 
-        Ok(peers)
+    pub async fn get_config(
+        &self,
+        db_type: Option<DbType>,
+        name: &str,
+        options: Vec<u8>,
+    ) -> anyhow::Result<Option<Config>> {
+        match db_type {
+            Some(DbType::Snowflake) => {
+                let err = format!("unable to decode {} options for peer {}", "snowflake", name);
+                let snowflake_config =
+                    pt::peerdb_peers::SnowflakeConfig::decode(options.as_slice()).context(err)?;
+                Ok(Some(Config::SnowflakeConfig(snowflake_config)))
+            }
+            Some(DbType::Bigquery) => {
+                let err = format!("unable to decode {} options for peer {}", "bigquery", name);
+                let bigquery_config =
+                    pt::peerdb_peers::BigqueryConfig::decode(options.as_slice()).context(err)?;
+                Ok(Some(Config::BigqueryConfig(bigquery_config)))
+            }
+            Some(DbType::Mongo) => {
+                let err = format!("unable to decode {} options for peer {}", "mongo", name);
+                let mongo_config =
+                    pt::peerdb_peers::MongoConfig::decode(options.as_slice()).context(err)?;
+                Ok(Some(Config::MongoConfig(mongo_config)))
+            }
+            Some(DbType::Eventhub) => {
+                let err = format!("unable to decode {} options for peer {}", "eventhub", name);
+                let eventhub_config =
+                    pt::peerdb_peers::EventHubConfig::decode(options.as_slice()).context(err)?;
+                Ok(Some(Config::EventhubConfig(eventhub_config)))
+            }
+            Some(DbType::Postgres) => {
+                let err = format!("unable to decode {} options for peer {}", "postgres", name);
+                let postgres_config =
+                    pt::peerdb_peers::PostgresConfig::decode(options.as_slice()).context(err)?;
+                Ok(Some(Config::PostgresConfig(postgres_config)))
+            }
+            None => Ok(None),
+        }
     }
 
     async fn normalize_schema_for_table_identifier(
@@ -412,7 +445,7 @@ impl Catalog {
             .await?;
         // currently multiple rows for a flow job exist in catalog, but all mapped to same workflow id
         // CHANGE LOGIC IF THIS ASSUMPTION CHANGES
-        if rows.len() == 0 {
+        if rows.is_empty() {
             tracing::info!("no workflow id found for flow job {}", flow_job_name);
             return Ok(None);
         }

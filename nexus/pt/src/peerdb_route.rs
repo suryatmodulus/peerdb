@@ -24,6 +24,34 @@ pub struct CreateQRepFlowResponse {
     #[prost(string, tag = "1")]
     pub worflow_id: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HealthCheckRequest {
+    #[prost(string, tag = "1")]
+    pub message: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HealthCheckResponse {
+    #[prost(bool, tag = "1")]
+    pub ok: bool,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ShutdownRequest {
+    #[prost(string, tag = "1")]
+    pub workflow_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub flow_job_name: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ShutdownResponse {
+    #[prost(bool, tag = "1")]
+    pub ok: bool,
+    #[prost(string, tag = "2")]
+    pub error_message: ::prost::alloc::string::String,
+}
 /// Generated client implementations.
 pub mod flow_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -159,6 +187,56 @@ pub mod flow_service_client {
                 .insert(GrpcMethod::new("peerdb_route.FlowService", "CreateQRepFlow"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn health_check(
+            &mut self,
+            request: impl tonic::IntoRequest<super::HealthCheckRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::HealthCheckResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/peerdb_route.FlowService/HealthCheck",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("peerdb_route.FlowService", "HealthCheck"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn shutdown_flow(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ShutdownRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ShutdownResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/peerdb_route.FlowService/ShutdownFlow",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("peerdb_route.FlowService", "ShutdownFlow"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -180,6 +258,20 @@ pub mod flow_service_server {
             request: tonic::Request<super::CreateQRepFlowRequest>,
         ) -> std::result::Result<
             tonic::Response<super::CreateQRepFlowResponse>,
+            tonic::Status,
+        >;
+        async fn health_check(
+            &self,
+            request: tonic::Request<super::HealthCheckRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::HealthCheckResponse>,
+            tonic::Status,
+        >;
+        async fn shutdown_flow(
+            &self,
+            request: tonic::Request<super::ShutdownRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ShutdownResponse>,
             tonic::Status,
         >;
     }
@@ -339,6 +431,98 @@ pub mod flow_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = CreateQRepFlowSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peerdb_route.FlowService/HealthCheck" => {
+                    #[allow(non_camel_case_types)]
+                    struct HealthCheckSvc<T: FlowService>(pub Arc<T>);
+                    impl<
+                        T: FlowService,
+                    > tonic::server::UnaryService<super::HealthCheckRequest>
+                    for HealthCheckSvc<T> {
+                        type Response = super::HealthCheckResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::HealthCheckRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).health_check(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = HealthCheckSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/peerdb_route.FlowService/ShutdownFlow" => {
+                    #[allow(non_camel_case_types)]
+                    struct ShutdownFlowSvc<T: FlowService>(pub Arc<T>);
+                    impl<
+                        T: FlowService,
+                    > tonic::server::UnaryService<super::ShutdownRequest>
+                    for ShutdownFlowSvc<T> {
+                        type Response = super::ShutdownResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ShutdownRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                (*inner).shutdown_flow(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ShutdownFlowSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
