@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::Context;
 use pt::{
     flow_model::{FlowJob, QRepFlowJob},
     peerdb_flow::{QRepWriteMode, QRepWriteType},
@@ -14,13 +15,18 @@ pub struct FlowGrpcClient {
 impl FlowGrpcClient {
     // create a new grpc client to the flow server using flow server address
     pub async fn new(flow_server_addr: &str) -> anyhow::Result<Self> {
+        // change protocol to grpc
+        let flow_server_addr = flow_server_addr.replace("http", "grpc");
+
         // we want addr/grpc as the grpc endpoint
         let grpc_endpoint = format!("{}/grpc", flow_server_addr);
+        tracing::info!("connecting to flow server at {}", grpc_endpoint);
 
         // Create a gRPC channel and connect to the server
-        let channel = tonic::transport::Channel::from_shared(grpc_endpoint)?
+        let channel = tonic::transport::Channel::from_shared(grpc_endpoint.clone())?
             .connect()
-            .await?;
+            .await
+            .with_context(|| format!("failed to connect to flow server at {}", grpc_endpoint))?;
 
         // construct a grpc client to the flow server
         let client = peerdb_route::flow_service_client::FlowServiceClient::new(channel);
@@ -193,7 +199,11 @@ impl FlowGrpcClient {
             message: "ping".to_string(),
         };
 
-        let response = self.client.health_check(health_check_req).await?;
+        let response = self
+            .client
+            .health_check(health_check_req)
+            .await
+            .with_context(|| "failed to send health check request to flow server")?;
         let health_check_response = response.into_inner();
 
         Ok(health_check_response.ok)

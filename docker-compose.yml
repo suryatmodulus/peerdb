@@ -112,6 +112,7 @@ services:
         condition: service_healthy
 
   peerdb:
+    container_name: peerdb_server
     build:
       context: .
       dockerfile: stacks/nexus.Dockerfile
@@ -124,6 +125,8 @@ services:
       PEERDB_CATALOG_DATABASE: postgres
       PEERDB_PASSWORD: peerdb
       PEERDB_FLOW_SERVER_ADDRESS: http://flow_api:8112
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
     ports:
       - 9900:9900
     depends_on:

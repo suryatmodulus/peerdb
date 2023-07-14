@@ -234,6 +234,12 @@ func APIMain(args *APIServerParams) error {
 	flowHandler := NewFlowRequestHandler(tc)
 	protos.RegisterFlowServiceServer(grpcServer, flowHandler)
 
+	// Create a custom handler to serve gRPC requests
+	grpcHandler := func(c *gin.Context) {
+		// gRPC requests should not be handled by Gin but by the gRPC server directly
+		grpcServer.ServeHTTP(c.Writer, c.Request)
+	}
+
 	pool, err := pgxpool.New(ctx, args.CatalogJdbcURL)
 	if err != nil {
 		return fmt.Errorf("unable to create database pool: %w", err)
@@ -245,9 +251,7 @@ func APIMain(args *APIServerParams) error {
 		pool:           pool,
 	}
 
-	r.POST("/grpc", func(c *gin.Context) {
-		grpcServer.ServeHTTP(c.Writer, c.Request)
-	})
+	r.POST("/grpc", grpcHandler)
 
 	r.GET("/health", func(c *gin.Context) {
 		ctx := c.Request.Context()
